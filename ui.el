@@ -119,12 +119,7 @@ and its corresponding replacement string."
             (replacement (cdr pair)))
         (setq result (replace-regexp-in-string pattern replacement result t))))))
 
-(defun tts-synthesize-and-play (text)
-  (message "function was called with %s" text)
-  (let ((script-path "~/voice-interface/text-to-speech.sh"))  ; Adjust this to the actual path
-    (shell-command-to-string (M (format "%s \"%s\"" script-path text)))))
-
-(defun tts-synthesize-and-play-async (text)
+(defun gdp-tts-synthesize-and-play-async (text)
   (let ((script-path (concat (getenv "HOME") "/voice-interface/text-to-speech.sh"))  ; Adjust this to the actual path
         (output-buffer (get-buffer-create "*tts-synthesis-output*")))
     (with-current-buffer output-buffer
@@ -162,7 +157,7 @@ After you have fulfilled the instruction, reply in english by writing bash code 
                       (gdp-voice-control-log (format "======== stdout:\n%s" stdout))
                       (if (string-match "REPLY" stdout)
                           (progn
-                            (tts-synthesize-and-play-async (replace-regexp-in-string "REPLY" "" stdout)))
+                            (gdp-tts-synthesize-and-play-async (replace-regexp-in-string "REPLY" "" stdout)))
                         (progn
                           (unless (>= iteration-counter 10) ; Check if counter reached 10
                             (gdp-send-single-prompt-to-chatgpt stdout #'handle-reply t)))))))
