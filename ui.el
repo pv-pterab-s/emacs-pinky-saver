@@ -120,7 +120,7 @@ and its corresponding replacement string."
         (setq result (replace-regexp-in-string pattern replacement result t))))))
 
 (defun gdp-tts-synthesize-and-play-async (text)
-  (let ((script-path (concat (getenv "HOME") "/voice-interface/text-to-speech.sh"))  ; Adjust this to the actual path
+  (let ((script-path (concat (getenv "HOME") "/voice-interface/text_to_speech.sh"))  ; Adjust this to the actual path
         (output-buffer (get-buffer-create "*tts-synthesis-output*")))
     (with-current-buffer output-buffer
       (erase-buffer))  ; Clear the buffer before running the script.
