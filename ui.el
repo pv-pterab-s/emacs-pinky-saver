@@ -303,7 +303,6 @@ After you have fulfilled the instruction, reply in english by writing bash code 
   (unless (process-live-p gdp-voice-recording-process)
     (gdp-transcribe-audio-async #'(lambda (text) (gdp-process-transcription-and-send-prompt text)))))
 
-;; Keybinding for F12 to toggle voice recording and potentially process commands
 (global-set-key (kbd "C-c =") 'gdp-toggle-voice-recording-and-process)
 
 
