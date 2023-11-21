@@ -1,9 +1,9 @@
 # Emacs Pinky Saver
 
 This repository serves as a _very simple_ implementation of a voice-driven
-GPT4 co-worker. This is not an emacs package, but rather strung-together elisp
-functions and shell scripts that demonstrate how disturbingly trivial it is to
-build an emacs AI co-worker. See the [blog
+GPT4 co-worker for emacs. This is not an emacs package, but rather strung-together
+elisp functions and shell scripts that demonstrate how disturbingly trivial it
+is to build an emacs AI co-worker. See the [blog
 post](https://arrayfire.com/blog/talk-to-emacs-with-a-gpt4-co-worker/) for a
 quick writeup. Notably, it was surprisingly [simple to record audio with very
 low
@@ -41,6 +41,8 @@ algorithm with a simple initial prompt:
     replies or replies that are very long. I will play back the reply using text
     to speech software.
 
+## Setup Sketch
+
 The emacs code is a simple elisp script `ui.el` that depends on an installed
 and configured [gptel](https://github.com/karthink/gptel) package. Critically,
 `gptel` must be configured to utilize the [gpt-4-1106-preview
@@ -51,3 +53,18 @@ variable. We assume that you have a valid OpenAI API key that you must define
 in `text-to-speech.sh` and `transcribe_audio.sh` as well as in the `gptel`
 configuration. Finally (and horribly) the script is hard-coded to run at
 `~/voice-interface`.
+
+Email or file bugs if there are problems. I will formalize this work if there
+is interest.
+
+## Usage
+
+`ui.el` defines `C-c =` as a toggle for voice recording. Source the `ui.el`
+with `eval-buffer` (after setup as described above). From `dired-mode`, begin
+recording with the toggle, make your request, and toggle the recording
+again. Once toggled off, emacs will process your voice recording, query the AI
+with the initial prompt, above, and start executing the AI's instructions.
+
+**WARNING** The AI can make mistakes and you might say something horrible on
+accident like "Man, I hate my harddrive!" I hope you understand the
+ramifications :D
