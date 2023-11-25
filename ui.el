@@ -169,6 +169,13 @@ After you have fulfilled the instruction, reply in english by writing bash code 
 
 
 
+
+
+
+
+
+
+
 ;;;;;;;;;;;;;;; voice interface
 (defvar gdp-voice-recording-process nil
   "Process handle for the voice recording.")
@@ -221,16 +228,6 @@ After you have fulfilled the instruction, reply in english by writing bash code 
       (setq gdp-voice-recording-process (start-process "voice-recording" nil "~/voice-interface/start_recording.sh"))
       (gdp-voice-control-log "Started recording."))))
 
-(defun gdp-transcribe-audio ()
-  "Transcribe the most recent audio recording."
-  (let* ((recording-directory "~/voice-interface/recordings")
-         (newest-file (gdp-find-newest-audio-file recording-directory))
-         (transcription-command (concat "~/voice-interface/transcribe_audio.sh " newest-file)))
-    (gdp-voice-control-log "Sending audio file to the cloud for transcription.")
-    (let ((transcription (shell-command-to-string transcription-command)))
-      (gdp-voice-control-log (format "Transcription: %s" transcription))
-      transcription)))
-
 
 
 (defun gdp-transcribe-audio-async (callback)
@@ -258,32 +255,6 @@ After you have fulfilled the instruction, reply in english by writing bash code 
 
 
 ;; complete implementation
-(defun gdp-run-bash-code-in-buffer-context (bash-code)
-  "Run the BASH-CODE in the context of the buffer stored in `gdp-last-buffer-context` and stream output to *Voice Control*."
-  (let ((buffer-context gdp-last-buffer-context)
-        buffer-name working-directory process)
-
-    ;; Ensure gdp-last-buffer-context is populated and valid
-    (unless buffer-context
-      (error "No buffer context available"))
-
-    ;; Set the buffer name and working directory from the context
-    (setq buffer-name (gdp-buffer-context-name buffer-context))
-    (setq working-directory (gdp-buffer-context-path buffer-context))
-
-    ;; Make sure the Voice Control window is open and the buffer is in compilation mode
-    (gdp-open-voice-control-window)
-
-    ;; Run the bash code as an asynchronous process within the *Voice Control* buffer
-    (setq process
-          (start-file-process "voice-control-bash" "*Voice Control*" "bash" "-c" bash-code))
-
-    ;; Configure the process to use the *Voice Control* window, manage its output and highlight errors
-    (with-current-buffer "*Voice Control*"
-      ;; Note that `compilation-start` was not used, to avoid creating a new compile window.
-      (compilation-mode)
-      (set (make-local-variable 'compilation-error-regexp-alist) '(bash))
-      (set-process-filter process 'compilation-filter))))
 
 (defun gdp-process-transcription-and-send-prompt (transcription)
   "Process the transcription and send a prompt to ChatGPT based on the buffer context."
@@ -317,85 +288,3 @@ After you have fulfilled the instruction, reply in english by writing bash code 
     (insert (gdp-transcribe-audio))))
 
 (global-set-key (kbd "C-c -") 'gdp-toggle-voice-recording-and-insert)
-
-
-
-
-;; combined ai prompts
-
-(defun gdp-generate-chatgpt-prompt (interpreted-text)
-  "Generate a prompt for ChatGPT to create code based on INTERPRETED-TEXT."
-  (let ((mode (if gdp-last-buffer-context
-                  (gdp-buffer-context-mode gdp-last-buffer-context)
-                'unknown))
-        (prompt "Please write a "))
-    ;; Append to the prompt based on the mode
-    (message "%s" (gdp-buffer-context-mode gdp-last-buffer-context))
-    (message "mode %s" mode)
-    (setq prompt (cond
-                  ((eq mode 'dired-mode)
-                   (concat prompt "bash script to: " interpreted-text))
-                  (t
-                   (concat prompt "piece of Emacs Lisp code to: " interpreted-text))))
-    ;; Return the full prompt to be sent to ChatGPT
-    prompt))
-
-(defun gdp-generate-chatpgt-prompt-bash-code (interpreted-text)
-   (format
-    "Please respond to the final instruction with only correct bash code. The final instruction is the end of the prompt surrounded by quotes. Do not provide an explanation of the code. Do not surround the code with backticks. Only respond with code that is directly executable with no reformating, filtering, etc. Remember to change directory into the directory `%s`. The final instruction is: \"%s\""
-    (gdp-buffer-context-path gdp-last-buffer-context)
-    interpreted-text
-    ))
-
-(defun gdp-extract-bash-code (input-string)
-  "Extracts the bash code blocks from a given multi-line string INPUT-STRING."
-  (let ((lines (split-string input-string "\n"))
-        (in-bash-block nil)
-        (bash-code-blocks '())
-        (current-block '()))
-    (dolist (line lines)
-      (cond
-       ((string-match "^```bash" line) (setq in-bash-block t))
-       ((string-match "^```" line)
-        (when in-bash-block
-          (setq bash-code-blocks (append bash-code-blocks (list (string-join current-block "\n"))))
-          (setq current-block '()))
-        (setq in-bash-block nil))
-       (in-bash-block (setq current-block (append current-block (list line))))))
-    bash-code-blocks))
-
-
-
-(defun gdp-run-bash-code-in-buffer-context (bash-code)
-  "Run the BASH-CODE in the context of the buffer stored in `gdp-last-buffer-context` and stream output to *Voice Control*."
-  (let ((buffer-context gdp-last-buffer-context)
-        buffer-name working-directory process)
-
-    ;; Ensure gdp-last-buffer-context is populated and valid
-    (unless buffer-context
-      (error "No buffer context available"))
-
-    ;; Set the buffer name and working directory from the context
-    (setq buffer-name (gdp-buffer-context-name buffer-context))
-    (setq working-directory (gdp-buffer-context-path buffer-context))
-
-    ;; Make sure the Voice Control window is open and the buffer is in compilation mode
-    (gdp-open-voice-control-window)
-
-    ;; Set the working directory for the Voice Control buffer
-    (with-current-buffer "*Voice Control*"
-      (setq default-directory
-            (if (file-directory-p working-directory)
-                working-directory
-              default-directory)))
-
-    ;; Run the bash code as an asynchronous process within the *Voice Control* buffer
-    (setq process
-          (start-file-process "voice-control-bash" "*Voice Control*" "bash" "-c" bash-code))
-
-    ;; Configure the process to use the *Voice Control* window, manage its output and highlight errors
-    (with-current-buffer "*Voice Control*"
-      ;; Note that `compilation-start` was not used, to avoid creating a new compile window.
-      (compilation-mode)
-      (set (make-local-variable 'compilation-error-regexp-alist) '(bash))
-      (set-process-filter process 'compilation-filter))))
