@@ -49,18 +49,6 @@
           (goto-char (point-max))
           (recenter -1))))))  ; '-1' recenters with the last line at the bottom of the window
 
-
-
-;; A helper function that updates the Voice Control window height
-(defun gdp-update-voice-control-window-height ()
-  (with-current-buffer "*Voice Control*"
-    (let* ((voice-control-window (get-buffer-window (current-buffer) 'visible))
-           (frame-height (frame-height))
-           (new-window-height (max 1 (floor (* 0.07 frame-height)))))
-      ;; Update the window height
-      (when voice-control-window
-        (window-resize voice-control-window (- new-window-height (window-height voice-control-window)) t)))))
-
 (defun gdp-voice-control-log (text)
   "Write a log message TEXT to the *Voice Control* buffer."
   (gdp-voice-control-message (format "[%s] %s" (format-time-string "%H:%M:%S") text)))
